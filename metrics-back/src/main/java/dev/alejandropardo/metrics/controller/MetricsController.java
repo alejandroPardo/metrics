@@ -1,6 +1,5 @@
 package dev.alejandropardo.metrics.controller;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -37,15 +36,13 @@ public class MetricsController {
 	
 	@GetMapping(path = "/summarize")
 	public ResponseObject getSummarizedMetrics(
-			@RequestParam(required = false, name = "_timestampFrom") LocalDateTime timestampFrom,
-			@RequestParam(required = false, name = "_timestampTo") LocalDateTime timestampTo,
 			@RequestParam(required = false, name = "_transactions") boolean transactions,
-			@RequestParam(required = false, name = "_timeline") TimelineValues timeline) {
+			@RequestParam(name = "_timeline", defaultValue = "WEEK") TimelineValues timeline) {
 		LOGGER.info("All Metrics requested");
 		if(transactions) {
 			return metricsService.findForChart(timeline);
 		} else {
-			return metricsService.findSummarizedMetrics(timestampFrom, timestampTo);
+			return metricsService.findSummarizedMetrics(timeline);
 		}
 	}
 

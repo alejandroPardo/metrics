@@ -1,3 +1,11 @@
 .App {
   text-align: center;
 }
+
+.operation-row {
+  width: 70%;
+}
+
+td {
+  text-align: left;
+}

@@ -19,10 +19,10 @@ public interface MetricsService {
 
 	void insertMetric(MetricRequest metric);
 
-	ResponseObject findSummarizedMetrics(LocalDateTime timestampFrom, LocalDateTime timestampTo);
-
 	ResponseObject findSummarizedTransactions(LocalDateTime timestampFrom, LocalDateTime timestampTo);
 
 	ResponseObject findForChart(TimelineValues timeline);
+
+	ResponseObject findSummarizedMetrics(TimelineValues timeline);
 
 }

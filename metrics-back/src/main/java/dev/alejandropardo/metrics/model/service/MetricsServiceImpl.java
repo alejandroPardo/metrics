@@ -1,16 +1,12 @@
 package dev.alejandropardo.metrics.model.service;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -35,7 +31,7 @@ public class MetricsServiceImpl implements MetricsService {
 
 	NamedParameterJdbcTemplate template;
 
-	private final String summarizedMetricsSQL = "select name, count(name) as count, avg(duration_ms) as averageTime from metrics group by name order by averageTime desc;";
+	private final String summarizedMetricsSQL = "select name, count(name) as count, avg(duration_ms) as averageTime from metrics where metric_timestamp >= (now() - interval '1 :timeline') group by name order by averageTime desc;";
 	private final String summarizedTransactionsSQL = "select * from metrics order by metric_timestamp;";
 
 	@Override
@@ -65,11 +61,11 @@ public class MetricsServiceImpl implements MetricsService {
 	}
 
 	@Override
-	public ResponseObject findSummarizedMetrics(LocalDateTime timestampFrom, LocalDateTime timestampTo) {
+	public ResponseObject findSummarizedMetrics(TimelineValues timeline) {
 		Instant startTime = Instant.now();
 
 		SqlParameterSource param = new MapSqlParameterSource();
-		var rows = template.queryForList(summarizedMetricsSQL, param);
+		var rows = template.queryForList(summarizedMetricsSQL.replace(":timeline", timeline.name()), param);
 
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
 		return new ResponseObject(rows, metadata);
