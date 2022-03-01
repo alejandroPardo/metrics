@@ -7,33 +7,28 @@ const SummarizeView = () => {
     const[counts, setCounts] = useState([]);
     const[tableData, setTableData] = useState([]);
     const[selectedTimeline, setSelectedTimeline] = useState("WEEK");
+    const[refresh, setRefresh] = useState(false);
     const chartsUrl = `http://localhost:8080/v1/metrics/api/summarize?_timeline=${selectedTimeline}&_transactions=true`;
     const tableUrl = `http://localhost:8080/v1/metrics/api/summarize?_timeline=${selectedTimeline}`;
 
     useEffect(() => {
-        reloadData();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      },[selectedTimeline]);
-
-      const reloadData = useCallback(()=>{
-        fetch(chartsUrl)
-          .then(response => response.json())
-          .then(data => {
-            let seriesData = [];
-            let countsData = [];
-            data.data.forEach(element => {
-              seriesData.push([Date.parse(element.hour),element.average]);
-              countsData.push([Date.parse(element.hour),element.count]);
-            });
-            setSeries([{"name":"Average","data":seriesData}]);
-            setCounts([{"name":"Count","data":countsData}]);
+      fetch(chartsUrl)
+        .then(response => response.json())
+        .then(data => {
+          let seriesData = [];
+          let countsData = [];
+          data.data.forEach(element => {
+            seriesData.push([Date.parse(element.hour),element.average]);
+            countsData.push([Date.parse(element.hour),element.count]);
           });
+          setSeries([{"name":"Average","data":seriesData}]);
+          setCounts([{"name":"Count","data":countsData}]);
+        });
 
-        fetch(tableUrl)
-          .then(response => response.json())
-          .then(data => setTableData(data.data));
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      }, []);
+      fetch(tableUrl)
+        .then(response => response.json())
+        .then(data => setTableData(data.data));
+      },[selectedTimeline, refresh]);
 
       const renderTableData = () => {
         return tableData.map((key, index) => {
@@ -51,8 +46,8 @@ const SummarizeView = () => {
       setSelectedTimeline(e.target.value);
     }
 
-    const refresh = (e) => {
-      reloadData();
+    const refreshData = (e) => {
+      setRefresh(refresh ? false : true);
     }
 
     return (
@@ -69,7 +64,7 @@ const SummarizeView = () => {
             </Col>
             <Col xs={2}>
               <div className="d-grid gap-2">
-                <Button className="btn-block" variant="secondary" onClick={refresh}>Refresh</Button>
+                <Button className="btn-block" variant="secondary" onClick={refreshData}>Refresh</Button>
               </div>
             </Col>
           </Row>

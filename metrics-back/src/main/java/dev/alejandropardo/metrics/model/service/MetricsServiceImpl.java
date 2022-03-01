@@ -44,17 +44,7 @@ public class MetricsServiceImpl implements MetricsService {
 		Instant startTime = Instant.now();
 
 		SqlParameterSource param = new MapSqlParameterSource();
-		var rows = template.queryForList(timeline.getSqlQuery(), param);/*, new ResultSetExtractor<List<Object>>() {
-
-			@Override
-			public List<Object> extractData(ResultSet rs) throws SQLException, DataAccessException {
-				List<Object> result = new ArrayList<>();
-				while(rs.next()) {
-					result.add(List.of(rs.getTimestamp("hour").toInstant().toEpochMilli(), rs.getLong("average")));
-		        }
-		        return result;
-			}
-		});*/
+		var rows = template.queryForList(timeline.getSqlQuery(), param);
 
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
 		return new ResponseObject(rows, metadata);
