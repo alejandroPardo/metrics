@@ -1,5 +1,7 @@
 import './App.css';
 import SummarizeView from './view/SummarizeView.jsx';
+import FailureView from './view/FailureView.jsx';
+import TransactionsView from './view/TransactionsView.jsx';
 import {
   BrowserRouter as Router,
   Routes,
@@ -37,12 +39,12 @@ function App() {
         </Navbar>
         <Routes>
           <Route path="/" element={<SummarizeView />} />
-          <Route path="/transactions"  />
-          <Route path="/failures"  />
+          <Route path="/transactions" element={<TransactionsView />} />
+          <Route path="/failures" element={<FailureView />} />
         </Routes>
       </div>
     </Router>
   );
-  }
+}
 
 export default App;

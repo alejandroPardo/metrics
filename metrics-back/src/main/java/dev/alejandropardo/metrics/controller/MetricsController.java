@@ -1,7 +1,5 @@
 package dev.alejandropardo.metrics.controller;
 
-import java.util.List;
-
 import javax.annotation.Resource;
 
 import org.slf4j.Logger;
@@ -15,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import dev.alejandropardo.metrics.controller.requests.MetricRequest;
 import dev.alejandropardo.metrics.controller.requests.TimelineValues;
+import dev.alejandropardo.metrics.controller.requests.Transactions;
 import dev.alejandropardo.metrics.controller.response.ResponseObject;
-import dev.alejandropardo.metrics.model.dao.Metric;
 import dev.alejandropardo.metrics.model.service.MetricsService;
 
 @RestController
@@ -28,22 +26,41 @@ public class MetricsController {
 	@Resource
 	MetricsService metricsService;
 
-	@GetMapping
+	/*@GetMapping
 	public List<Metric> getMetrics() {
 		LOGGER.info("All Metrics requested");
 		return metricsService.findAll();
-	}
+	}*/
 	
-	@GetMapping(path = "/summarize")
+	@GetMapping()
 	public ResponseObject getSummarizedMetrics(
-			@RequestParam(required = false, name = "_transactions") boolean transactions,
+			@RequestParam(name = "_transaction", defaultValue = "AVERAGE") Transactions transaction,
 			@RequestParam(name = "_timeline", defaultValue = "WEEK") TimelineValues timeline) {
 		LOGGER.info("All Metrics requested");
-		if(transactions) {
-			return metricsService.findForChart(timeline);
-		} else {
-			return metricsService.findSummarizedMetrics(timeline);
+		ResponseObject response = null;
+		switch(transaction) {
+		case AVERAGE:
+			response = metricsService.findForChart(timeline, false);
+			break;
+		case FAILURE_AVERAGE:
+			response = metricsService.findForChart(timeline, true);
+			break;
+		case FAILURE_OPERATIONS:
+			response = metricsService.findOperations(timeline, true);
+			break;
+		case OPERATIONS:
+			response = metricsService.findOperations(timeline, false); 
+			break;
+		case TRANSACTIONS_AVERAGE:
+			response = metricsService.findTransactions(timeline); 
+			break;
+		case TRANSACTIONS:
+			response = metricsService.findTransactionsList(timeline); 
+			break;
+		default:
+			break;
 		}
+		return response;
 	}
 
 	@PostMapping

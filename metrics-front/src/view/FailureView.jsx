@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import TimelineChart from '../components/Chart/TimelineChart.jsx';
 import { Table, Form, Container, Button, Row, Col } from 'react-bootstrap';
 
@@ -11,7 +11,7 @@ const SummarizeView = () => {
     const url = `http://localhost:8080/v1/metrics/api?_timeline=${selectedTimeline}`;
 
     useEffect(() => {
-      fetch(`${url}&_transaction=AVERAGE`)
+      fetch(`${url}&_transaction=FAILURE_AVERAGE`)
         .then(response => response.json())
         .then(data => {
           let seriesData = [];
@@ -24,7 +24,7 @@ const SummarizeView = () => {
           setCounts([{"name":"Count","data":countsData}]);
         });
 
-      fetch(`${url}&_transaction=OPERATIONS`)
+      fetch(`${url}&_transaction=FAILURE_OPERATIONS`)
         .then(response => response.json())
         .then(data => setTableData(data.data));
       },[selectedTimeline, refresh]);
@@ -71,7 +71,7 @@ const SummarizeView = () => {
           
         <TimelineChart title={"Summarized Metrics"} data={series} height={350} yTitle={"Average Time"} unit={"ms."}/>
         <TimelineChart title={""} data={counts} height={150} yTitle={"Calls"} unit={' '}/>
-
+        
         <Table responsive striped bordered hover data-url={tableData} data-toggle="table">
           <thead>
             <tr>

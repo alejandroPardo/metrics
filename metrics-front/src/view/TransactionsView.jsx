@@ -1,33 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import Chart from '../components/Chart/Chart.jsx';
+import StackChart from '../components/Chart/StackChart.jsx';
 import { Table, Form, Container } from 'react-bootstrap';
 
 const TransactionsView = () => {
     const[series, setSeries] = useState([]);
-    const[counts, setCounts] = useState([]);
+    const[categories, setCategories] = useState([]);
     const[tableData, setTableData] = useState([]);
     const[selectedTimeline, setSelectedTimeline] = useState("WEEK");
-    const chartsUrl = `http://localhost:8080/v1/metrics/api/summarize?_timeline=${selectedTimeline}&_transactions=true`;
-    const tableUrl = `http://localhost:8080/v1/metrics/api/summarize?_timeline=${selectedTimeline}`;
+    const url = `http://localhost:8080/v1/metrics/api?_timeline=${selectedTimeline}`;
 
     useEffect(() => {
-        fetch(chartsUrl)
-          .then(response => response.json())
-          .then(data => {
-            let seriesData = [];
-            let countsData = [];
-            data.data.forEach(element => {
-              seriesData.push([Date.parse(element.hour),element.average]);
-              countsData.push([Date.parse(element.hour),element.count]);
-            });
-            setSeries([{"name":"Average","data":seriesData}]);
-            setCounts([{"name":"Count","data":countsData}]);
+      fetch(`${url}&_transaction=TRANSACTIONS_AVERAGE`)
+        .then(response => response.json())
+        .then(data => {
+          let seriesData = [];
+          let categoriesData = [];
+          data.data.keys.forEach(key => {
+            seriesData.push({'name': key, 'data':[]});
           });
 
-        fetch(tableUrl)
-          .then(response => response.json())
-          .then(data => setTableData(data.data));
-      },[chartsUrl, selectedTimeline, tableUrl]);
+          data.data.values.forEach(element => {
+            categoriesData.push(element.timestamp);
+            seriesData.forEach(serie => {
+              console.log(serie.name);
+              console.log(element.values.hasOwnProperty(serie.name));
+              serie.data.push(element.values.hasOwnProperty(serie.name) ? element.values[serie.name] : 0);
+            })            
+          });
+          setSeries(seriesData);
+          setCategories(categoriesData);
+          console.log(categoriesData);
+          console.log(seriesData);
+      });
+
+      /*fetch(`${url}&_transaction=TRANSACTIONS`)
+        .then(response => response.json())
+        .then(data => setTableData(data.data));*/
+      },[selectedTimeline]);
 
       const renderTableData = () => {
         return tableData.map((key, index) => {
@@ -53,9 +62,7 @@ const TransactionsView = () => {
             <option value="HOUR">Past hour</option>
             <option value="MINUTE">Past minute</option>
           </Form.Select>
-
-          <Chart title={"Summarized Metrics"} data={series} height={350} yTitle={"Average Time"} unit={"ms."}/>
-          <Chart title={""} data={counts} height={150} yTitle={"Calls"} unit={' '}/>
+          <StackChart data={series} categories={categories}/>
           <Table responsive striped bordered hover data-url={tableData} data-toggle="table">
             <thead>
               <tr>

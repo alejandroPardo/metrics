@@ -1,6 +1,5 @@
 package dev.alejandropardo.metrics.model.service;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import dev.alejandropardo.metrics.controller.requests.MetricRequest;
@@ -19,10 +18,12 @@ public interface MetricsService {
 
 	void insertMetric(MetricRequest metric);
 
-	ResponseObject findSummarizedTransactions(LocalDateTime timestampFrom, LocalDateTime timestampTo);
+	ResponseObject findOperations(TimelineValues timeline, boolean isFailure);
 
-	ResponseObject findForChart(TimelineValues timeline);
+	ResponseObject findForChart(TimelineValues timeline, boolean isFailure);
 
-	ResponseObject findSummarizedMetrics(TimelineValues timeline);
+	ResponseObject findTransactions(TimelineValues timeline);
+
+	ResponseObject findTransactionsList(TimelineValues timeline);
 
 }
