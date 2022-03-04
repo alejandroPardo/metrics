@@ -20,8 +20,14 @@ const Chart = (props) => {
         show: true
       },
       zoom: {
-        enabled: true
+        enabled: false
       }
+    },
+    dataLabels: {
+      enabled: false
+    },
+    markers: {
+      size: 0,
     },
     plotOptions: {
       bar: {

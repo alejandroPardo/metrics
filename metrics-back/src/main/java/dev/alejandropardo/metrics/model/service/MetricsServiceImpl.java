@@ -24,8 +24,6 @@ import dev.alejandropardo.metrics.controller.requests.MetricRequest;
 import dev.alejandropardo.metrics.controller.requests.TimelineValues;
 import dev.alejandropardo.metrics.controller.response.Metadata;
 import dev.alejandropardo.metrics.controller.response.ResponseObject;
-import dev.alejandropardo.metrics.model.dao.LogLevel;
-import dev.alejandropardo.metrics.model.dao.LogType;
 import dev.alejandropardo.metrics.model.dao.Metric;
 import dev.alejandropardo.metrics.model.dao.Transaction;
 import dev.alejandropardo.metrics.model.dto.TransactionsAverage;
@@ -41,7 +39,7 @@ public class MetricsServiceImpl implements MetricsService {
 
 	
 	private final String summarizedMetricsSQL = "select metrics.name as name, count(metrics.name) as count, avg(metrics.duration_ms) as averageTime from metrics :joins where metric_timestamp >= (now() - interval '1 :timeline') :where group by metrics.name order by averageTime desc;";
-	private final String transactionsSQL = "select * from transactions where transaction_timestamp >= (now() - interval '1 :timeline') order by transaction_timestamp desc;";
+	private final String transactionsSQL = "select transaction_uuid, name, transaction_timestamp, type, transaction_level, transaction_value, transaction_code from transactions where transaction_timestamp >= (now() - interval '1 :timeline') order by transaction_timestamp desc;";
 	private final String transactionChartSQL = "select hours.hour, count(transaction_timestamp), transactions.type as transaction_type from hours left join transactions on date_trunc('hour', transaction_timestamp) = hours.hour group by hours.hour, transactions.type order by hours.hour";
 
 	private final String hoursWith = "with hours as (select generate_series(date_trunc('hour', now()) - '1 week'::interval, date_trunc('hour', now()), '1 hour'::interval) as hour) ";
@@ -123,7 +121,33 @@ public class MetricsServiceImpl implements MetricsService {
 	public ResponseObject findTransactionsList(TimelineValues timeline) {
 		Instant startTime = Instant.now();
 
-		var rows = template.queryForList(transactionsSQL.replace(":timeline", timeline.name()), new MapSqlParameterSource());
+		var rows = template.query(transactionsSQL.replace(":timeline", timeline.name()), new MapSqlParameterSource(), new ResultSetExtractor<List<Transaction>>(){
+		    @Override
+		    public List<Transaction> extractData(ResultSet rs) throws SQLException,DataAccessException {
+		    	List<Transaction> results = new ArrayList<>();
+		        while(rs.next()){
+		        	String level = rs.getString("transaction_level");
+		        	String transactionValue = rs.getString("transaction_value");
+		        	String code = rs.getString("transaction_code");
+		        	
+		        	String value = transactionValue;
+		        	
+		        	if(level == null && transactionValue == null) {
+		        		value = "Response Code " + code;
+		        	} else if(level != null) {
+		        		value = level + " " + transactionValue;
+		        	}
+		        	
+		        	Transaction transaction = new Transaction(rs.getString("transaction_uuid"), null, rs.getString("type"), rs.getString("name"), rs.getTimestamp("transaction_timestamp").toLocalDateTime(), level, value, code==null?null:Integer.parseInt(code));
+		        	results.add(transaction);
+		        }
+		        return results;
+		    }
+		});
+		
+		/*rows.stream().forEach(row -> {
+			if(row.get("transaction_timestamp").toString().equalsIgnoreCase("EMPTY")) row.put("transaction_timestamp", null);
+		});*/
 		
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
 		return new ResponseObject(rows, metadata);
@@ -146,10 +170,8 @@ public class MetricsServiceImpl implements MetricsService {
 	@Override
 	public void insertTransaction(Transaction transaction) {
 		final String sql = "INSERT INTO TRANSACTIONS(TRANSACTION_UUID, NAME, METRIC_UUID, TRANSACTION_TIMESTAMP, TYPE, TRANSACTION_LEVEL, TRANSACTION_VALUE, TRANSACTION_CODE) values(:transactionUuid, :name, :metricUuid, :transactionTimestamp, :type, :transactionLevel, :transactionValue, :transactionCode)";
-		String type = (transaction.getType() != null) ? transaction.getType().toString() : LogType.EMPTY.toString();
-		String level = (transaction.getTransactionLevel() != null) ? transaction.getTransactionLevel().toString() : LogLevel.EMPTY.toString();
-		SqlParameterSource param = new MapSqlParameterSource().addValue("transactionUuid", transaction.getTransactionUuid()).addValue("name", transaction.getName()).addValue("metricUuid", transaction.getMetricUuid()).addValue("transactionTimestamp", transaction.getTransactionTimestamp()).addValue("type", type)
-				.addValue("transactionLevel", level).addValue("transactionValue", transaction.getTransactionValue()).addValue("transactionCode", transaction.getCode());
+		SqlParameterSource param = new MapSqlParameterSource().addValue("transactionUuid", transaction.getTransactionUuid()).addValue("name", transaction.getName()).addValue("metricUuid", transaction.getMetricUuid()).addValue("transactionTimestamp", transaction.getTransactionTimestamp()).addValue("type", transaction.getType())
+				.addValue("transactionLevel", transaction.getTransactionLevel()).addValue("transactionValue", transaction.getTransactionValue()).addValue("transactionCode", transaction.getCode());
 		template.update(sql, param);
 	}
 
