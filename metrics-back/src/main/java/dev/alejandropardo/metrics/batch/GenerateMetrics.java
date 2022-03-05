@@ -46,7 +46,7 @@ public class GenerateMetrics {
 	private List<String> dependencies = List.of("Snowflake", "Oracle", "PostgreSQL", "MongoDB", "Couchbase", "External API", "Oauth token", "JWT Token");
 	private List<String> tables = List.of("sales", "units", "returns", "companies", "stock", "employees", "metrics", "reports", "tasks", "schedule");
 	
-	//@Scheduled(fixedDelayString = "#{new Double((T(java.lang.Math).random() + 1) * 500).intValue()}")
+	@Scheduled(fixedDelayString = "#{new Double((T(java.lang.Math).random() + 1) * 500).intValue()}")
 	public void generateOKRequests() {
 		Integer duration = rand.nextInt(highResponseTime-lowResponseTime) + lowResponseTime;
 		String requestURL = methods.get(rand.nextInt(methods.size())) + " " + urls.get(rand.nextInt(urls.size()));
@@ -90,7 +90,7 @@ public class GenerateMetrics {
 		}
 	}
 
-	//@Scheduled(fixedDelayString = "#{new Double((T(java.lang.Math).random() + 1) * 2500).intValue()}")
+	@Scheduled(fixedDelayString = "#{new Double((T(java.lang.Math).random() + 1) * 2500).intValue()}")
 	public void generateKORequests() {
 		String koValue = responseCodesKO.get(rand.nextInt(responseCodesKO.size()));
 		String requestURL = methods.get(rand.nextInt(methods.size())) + " " + urls.get(rand.nextInt(urls.size()));

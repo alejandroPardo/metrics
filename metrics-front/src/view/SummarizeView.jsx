@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import TimelineChart from '../components/Chart/TimelineChart.jsx';
 import { Table, Form, Container, Button, Row, Col } from 'react-bootstrap';
+import InformationTable from '../components/Table/InformationTable.jsx';
 
 const SummarizeView = () => {
     const[series, setSeries] = useState([]);
     const[counts, setCounts] = useState([]);
     const[tableData, setTableData] = useState([]);
+    const[tableHeaders, setTableHeaders] = useState([]);
     const[selectedTimeline, setSelectedTimeline] = useState("WEEK");
     const[refresh, setRefresh] = useState(false);
     const url = `http://localhost:8080/v1/metrics/api?_timeline=${selectedTimeline}`;
@@ -26,20 +28,19 @@ const SummarizeView = () => {
 
       fetch(`${url}&_transaction=OPERATIONS`)
         .then(response => response.json())
-        .then(data => setTableData(data.data));
-      },[selectedTimeline, refresh]);
+        .then(data => {
+          let columnData = [];
+          for (let key of Object.keys(data.data[0])) {
+            let sort = key === 'name' ? false : true;
+            columnData.push({dataField: key, text: key, sort: sort});
+          }
+          setTableHeaders(columnData)
 
-      const renderTableData = () => {
-        return tableData.map((key, index) => {
-           return (
-            <tr key={index}>
-              <td>{key.name}</td>
-              <td>{key.averagetime.toFixed(2)}</td>
-              <td>{key.count}</td>
-            </tr>
-          )
-        })
-     }
+          data.data.forEach(d => d.averagetime = d.averagetime.toFixed(2));
+
+          setTableData(data.data);
+        });
+      },[selectedTimeline, refresh]);
 
     const onChange = (e) => {
       setSelectedTimeline(e.target.value);
@@ -56,7 +57,7 @@ const SummarizeView = () => {
             <Col xs={10}>
             <Form.Select aria-label="Timeline Selector" onChange={onChange}>
               <option value="WEEK">Last Week</option>
-              <option value="DAY">Yesterday</option>
+              <option value="DAY">Last 24 hours</option>
               <option value="HOUR">Past hour</option>
               <option value="MINUTE">Past minute</option>
             </Form.Select>
@@ -71,19 +72,7 @@ const SummarizeView = () => {
           
         <TimelineChart title={"Summarized Metrics"} data={series} height={350} yTitle={"Average Time"} unit={"ms."}/>
         <TimelineChart title={""} data={counts} height={150} yTitle={"Calls"} unit={' '}/>
-
-        <Table responsive striped bordered hover data-url={tableData} data-toggle="table">
-          <thead>
-            <tr>
-              <th data-field="name" className="operation-row text-start">Operation</th>
-              <th data-field="averageTime" className="text-start">Average Duration (ms.)</th>
-              <th data-field="count" className="text-start">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {renderTableData()}
-          </tbody>
-        </Table>
+        <InformationTable data={tableData} columns={tableHeaders} rows={10}/>
       </Container>
     );
 }

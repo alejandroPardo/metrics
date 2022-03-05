@@ -11,8 +11,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Transaction {
-	private String transaction;
+public class TransactionDetails {
 	private String name;
 	private LocalDateTime timestamp;
 	private LogType type;

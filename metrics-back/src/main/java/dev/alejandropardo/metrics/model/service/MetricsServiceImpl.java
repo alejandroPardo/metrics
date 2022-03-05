@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.ResultSetExtractor;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
@@ -24,8 +25,10 @@ import dev.alejandropardo.metrics.controller.requests.MetricRequest;
 import dev.alejandropardo.metrics.controller.requests.TimelineValues;
 import dev.alejandropardo.metrics.controller.response.Metadata;
 import dev.alejandropardo.metrics.controller.response.ResponseObject;
-import dev.alejandropardo.metrics.model.dao.Metric;
+import dev.alejandropardo.metrics.model.dao.LogType;
 import dev.alejandropardo.metrics.model.dao.Transaction;
+import dev.alejandropardo.metrics.model.dto.MetricDetails;
+import dev.alejandropardo.metrics.model.dto.TransactionDetails;
 import dev.alejandropardo.metrics.model.dto.TransactionsAverage;
 
 @Repository
@@ -37,32 +40,28 @@ public class MetricsServiceImpl implements MetricsService {
 
 	NamedParameterJdbcTemplate template;
 
+	private final String transactionsSQL = "select transaction_uuid, metric_uuid, name, transaction_timestamp, type, transaction_level, transaction_value, transaction_code from transactions where transaction_timestamp >= (now() - interval '1 :timeline') order by transaction_timestamp desc;";
 	
-	private final String summarizedMetricsSQL = "select metrics.name as name, count(metrics.name) as count, avg(metrics.duration_ms) as averageTime from metrics :joins where metric_timestamp >= (now() - interval '1 :timeline') :where group by metrics.name order by averageTime desc;";
-	private final String transactionsSQL = "select transaction_uuid, name, transaction_timestamp, type, transaction_level, transaction_value, transaction_code from transactions where transaction_timestamp >= (now() - interval '1 :timeline') order by transaction_timestamp desc;";
-	private final String transactionChartSQL = "select hours.hour, count(transaction_timestamp), transactions.type as transaction_type from hours left join transactions on date_trunc('hour', transaction_timestamp) = hours.hour group by hours.hour, transactions.type order by hours.hour";
 
-	private final String hoursWith = "with hours as (select generate_series(date_trunc('hour', now()) - '1 week'::interval, date_trunc('hour', now()), '1 hour'::interval) as hour) ";
 	private final String transactionsJoin = " inner join transactions on transactions.metric_uuid = metrics.metric_uuid ";
 	private final String failuresWhere = "  transaction_code >= 400 ";
-	
-	@Override
-	public List<Metric> findAll() {
-		return template.query("select * from metrics group by metric_timestamp, name, description, duration_ms, metric_uuid order by metric_timestamp", new MetricsRowMapper());
-	}
 	
 	@Override
 	public ResponseObject findForChart(TimelineValues timeline, boolean isFailure) {
 		Instant startTime = Instant.now();
 		List<Map<String, Object>> rows = null;
 		if(isFailure) {
-			rows = template.queryForList(timeline.getSqlQuery().replace(":joins", transactionsJoin).replace(":where", " where " + failuresWhere), new MapSqlParameterSource());
+			rows = template.queryForList(getSeriesSqlQuery(timeline, Queries.SUMMARIZE_CHART_BY_TIMELINE).replace(":joins", transactionsJoin).replace(":where", " where " + failuresWhere), new MapSqlParameterSource());
 		} else {
-			rows = template.queryForList(timeline.getSqlQuery().replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
+			rows = template.queryForList(getSeriesSqlQuery(timeline, Queries.SUMMARIZE_CHART_BY_TIMELINE).replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
 		}
 
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
 		return new ResponseObject(rows, metadata);
+	}
+	
+	private String getSeriesSqlQuery(TimelineValues timeline, String query) {
+		return ("with hours as (" + Queries.GENERATE_SERIES + ") " + query).replace(":timeline", timeline.name().toLowerCase()).replace(":truncate", timeline.getTruncate());
 	}
 
 	@Override
@@ -71,9 +70,9 @@ public class MetricsServiceImpl implements MetricsService {
 
 		List<Map<String, Object>> rows = null;
 		if(isFailure) {
-			rows = template.queryForList(summarizedMetricsSQL.replace(":timeline", timeline.name()).replace(":joins", transactionsJoin).replace(":where", " and " + failuresWhere), new MapSqlParameterSource());
+			rows = template.queryForList(Queries.SUMMARIZED_METRICS_BY_TIMELINE.replace(":timeline", timeline.name()).replace(":joins", transactionsJoin).replace(":where", " and " + failuresWhere), new MapSqlParameterSource());
 		} else {
-			rows = template.queryForList(summarizedMetricsSQL.replace(":timeline", timeline.name()).replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
+			rows = template.queryForList(Queries.SUMMARIZED_METRICS_BY_TIMELINE.replace(":timeline", timeline.name()).replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
 		}
 		
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
@@ -83,7 +82,7 @@ public class MetricsServiceImpl implements MetricsService {
 	@Override
 	public ResponseObject findTransactions(TimelineValues timeline) {
 		Instant startTime = Instant.now();
-		var rows = template.query(hoursWith + transactionChartSQL.replace(":timeline", timeline.name()), new MapSqlParameterSource(), new ResultSetExtractor<List<TransactionsAverage>>(){
+		var rows = template.query(getSeriesSqlQuery(timeline, Queries.TRANSACTION_CHART_BY_TIMELINE), new MapSqlParameterSource(), new ResultSetExtractor<List<TransactionsAverage>>(){
 		    @Override
 		    public List<TransactionsAverage> extractData(ResultSet rs) throws SQLException,DataAccessException {
 		    	List<TransactionsAverage> results = new ArrayList<>();
@@ -138,24 +137,51 @@ public class MetricsServiceImpl implements MetricsService {
 		        		value = level + " " + transactionValue;
 		        	}
 		        	
-		        	Transaction transaction = new Transaction(rs.getString("transaction_uuid"), null, rs.getString("type"), rs.getString("name"), rs.getTimestamp("transaction_timestamp").toLocalDateTime(), level, value, code==null?null:Integer.parseInt(code));
+		        	Transaction transaction = new Transaction(rs.getString("transaction_uuid"), rs.getString("metric_uuid"), rs.getString("type"), rs.getString("name"), rs.getTimestamp("transaction_timestamp").toLocalDateTime(), level, value, code==null?null:Integer.parseInt(code));
 		        	results.add(transaction);
 		        }
 		        return results;
 		    }
 		});
 		
-		/*rows.stream().forEach(row -> {
-			if(row.get("transaction_timestamp").toString().equalsIgnoreCase("EMPTY")) row.put("transaction_timestamp", null);
-		});*/
-		
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
 		return new ResponseObject(rows, metadata);
 	}
 
 	@Override
-	public List<Transaction> findAllByMetricId() {
-		return null;
+	public ResponseObject findByMetricId(String uuid) {
+		var metric = template.queryForObject(Queries.METRIC_BY_UUID, new MapSqlParameterSource().addValue("uuid", uuid), new RowMapper<MetricDetails>(){
+			@Override
+			public MetricDetails mapRow(ResultSet rs, int rowNum) throws SQLException {
+				return new MetricDetails(rs.getString("name"), rs.getTimestamp("timestamp").toLocalDateTime(), rs.getInt("duration"), rs.getString("description"), null);
+			}
+		});
+		metric.setTransactions(template.query(Queries.TRANSACTION_BY_METRIC_UUID, new MapSqlParameterSource().addValue("metric_uuid", uuid), new ResultSetExtractor<List<TransactionDetails>>(){
+		    @Override
+		    public List<TransactionDetails> extractData(ResultSet rs) throws SQLException,DataAccessException {
+		    	List<TransactionDetails> results = new ArrayList<>();
+		        while(rs.next()){
+		        	String level = rs.getString("level");
+		        	String transactionValue = rs.getString("value");
+		        	String code = rs.getString("code");
+		        	
+		        	String value = transactionValue;
+		        	
+		        	if(level == null && transactionValue == null) {
+		        		value = "Response Code " + code;
+		        	} else if(level != null) {
+		        		value = level + " " + transactionValue;
+		        	}
+		        	
+		        	TransactionDetails transaction = new TransactionDetails(rs.getString("name"), rs.getTimestamp("timestamp").toLocalDateTime(), LogType.valueOf(rs.getString("type")), value);
+		        	results.add(transaction);
+		        }
+		        return results;
+		    }
+		}));
+		Instant startTime = Instant.now();
+		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, 0);
+		return new ResponseObject(metric, metadata);
 	}
 
 	@Override
@@ -167,8 +193,7 @@ public class MetricsServiceImpl implements MetricsService {
 		metric.getTransactions().stream().map(t -> new Transaction(UUID.randomUUID().toString(), metric.getUuid(), t.getType(), t.getName(), t.getTransactionTimestamp(), t.getLevel(), t.getValue(), t.getCode())).forEach(t -> insertTransaction(t));
 	}
 
-	@Override
-	public void insertTransaction(Transaction transaction) {
+	private void insertTransaction(Transaction transaction) {
 		final String sql = "INSERT INTO TRANSACTIONS(TRANSACTION_UUID, NAME, METRIC_UUID, TRANSACTION_TIMESTAMP, TYPE, TRANSACTION_LEVEL, TRANSACTION_VALUE, TRANSACTION_CODE) values(:transactionUuid, :name, :metricUuid, :transactionTimestamp, :type, :transactionLevel, :transactionValue, :transactionCode)";
 		SqlParameterSource param = new MapSqlParameterSource().addValue("transactionUuid", transaction.getTransactionUuid()).addValue("name", transaction.getName()).addValue("metricUuid", transaction.getMetricUuid()).addValue("transactionTimestamp", transaction.getTransactionTimestamp()).addValue("type", transaction.getType())
 				.addValue("transactionLevel", transaction.getTransactionLevel()).addValue("transactionValue", transaction.getTransactionValue()).addValue("transactionCode", transaction.getCode());

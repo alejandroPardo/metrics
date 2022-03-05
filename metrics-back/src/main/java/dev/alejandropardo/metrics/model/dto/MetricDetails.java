@@ -14,11 +14,14 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MetricDetails {
 	private String name;
+	
 	@JsonFormat(shape=JsonFormat.Shape.STRING, pattern="yyyy-MM-dd'T'HH:mm:ss")
 	private LocalDateTime timestamp;
+	
 	private Integer duration;
+	
 	private String description;
 	
-	private List<Transaction> transactions;
+	private List<TransactionDetails> transactions;
 	
 }

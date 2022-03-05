@@ -2,9 +2,8 @@ package dev.alejandropardo.metrics.controller;
 
 import javax.annotation.Resource;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,22 +20,18 @@ import dev.alejandropardo.metrics.model.service.MetricsService;
 @RequestMapping("/v1/metrics/api")
 public class MetricsController {
 	
-	private final Logger LOGGER = LoggerFactory.getLogger(this.getClass());
-
 	@Resource
 	MetricsService metricsService;
 
-	/*@GetMapping
-	public List<Metric> getMetrics() {
-		LOGGER.info("All Metrics requested");
-		return metricsService.findAll();
-	}*/
+	@GetMapping(path = "/{uuid}")
+	public ResponseObject getMetricByID(@PathVariable("uuid") String uuid) {
+		return metricsService.findByMetricId(uuid);
+	}
 	
 	@GetMapping()
-	public ResponseObject getSummarizedMetrics(
+	public ResponseObject getMetrics(
 			@RequestParam(name = "_transaction", defaultValue = "AVERAGE") Transactions transaction,
 			@RequestParam(name = "_timeline", defaultValue = "WEEK") TimelineValues timeline) {
-		LOGGER.info("All Metrics requested");
 		ResponseObject response = null;
 		switch(transaction) {
 		case AVERAGE:

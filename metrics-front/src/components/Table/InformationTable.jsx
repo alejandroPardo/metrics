@@ -2,10 +2,13 @@ import React, { useState, useEffect } from 'react';
 import BootstrapTable from "react-bootstrap-table-next";
 import filterFactory, { textFilter } from 'react-bootstrap-table2-filter';
 import InformationModal from '../Modal/InformationModal.jsx';
+import paginationFactory from 'react-bootstrap-table2-paginator';
+
+const url = `http://localhost:8080/v1/metrics/api/`;
 
 const InformationTable = (props) => {
   const [show, setShow] = useState(false);
-  const [modalContent, setModalContent] = useState('');
+  const [modalContent, setModalContent] = useState({});
   const hideModal = () => setShow(false);
 
   const [data, setData] = useState([]);
@@ -14,20 +17,24 @@ const InformationTable = (props) => {
   useEffect(() => {
     setData(props.data);
     setColumns(props.columns);
-    console.log(data);
-    console.log(columns)
   },[columns, data, props]);
-
-  const getModalData = (transaction_uuid) => {
-    return `hola ${transaction_uuid}`;
-  }
 
   const rowEvents = {
     onClick: (e, row, rowIndex) => {
-      setModalContent(getModalData(row.transaction_uuid));
-      setShow(true);
+      if(props.events) {
+        fetch(`${url}${row.metricUuid}`)
+          .then(response => response.json())
+          .then(data => setModalContent(data.data));
+        setShow(true);
+      }
     }
   };
+
+  const pagination = paginationFactory({
+    sizePerPage: props.rows,
+    hideSizePerPage: true,
+    showTotal: true
+  });
 
   return (
       <>
@@ -42,8 +49,9 @@ const InformationTable = (props) => {
           filter={filterFactory()}
           rowEvents={rowEvents} 
           noDataIndication="Table is Empty"
+          pagination={ pagination }
         />
-        <InformationModal show={show} handleClose={hideModal} content={modalContent} />
+        <InformationModal show={show} handleClose={hideModal} content={modalContent}/>
       </>
   );
 };
