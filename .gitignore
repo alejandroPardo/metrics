@@ -274,8 +274,8 @@ node_modules
 psd
 thumb
 sketch
-
-
+*.lst
+metrics-back/target/*
 sql/db-data/*
 
 # End of https://www.toptal.com/developers/gitignore/api/eclipse,java,react,node,macos

@@ -1,12 +1,6 @@
 package dev.alejandropardo.metrics.model.service;
 
 public final class Queries {
-	//select generate_series(date_trunc('hour', now()) - '1 week'::interval, date_trunc('hour', now()), '1 hour'::interval) as hour
-	//"select hours.hour, count(metric_timestamp), coalesce(avg(duration_ms),0) as average from hours left join metrics on date_trunc('hour', metric_timestamp) = hours.hour :joins :where group by hours.hour order by hours.hour"
-	
-	
-	//with hours as (select generate_series(date_trunc('hour', now()) - '1 week'::interval, date_trunc('hour', now()), '1 hour'::interval) as hour) 
-	//select metrics.name as name, count(metrics.name) as count, avg(metrics.duration_ms) as averageTime from metrics  where metric_timestamp >= (now() - interval '1 week')  group by metrics.name order by averageTime desc;
 	/* MODALS */
 	public static final String METRIC_BY_UUID = "select name, metric_timestamp as timestamp, duration_ms as duration, description from metrics where metric_uuid = :uuid";
 	public static final String TRANSACTION_BY_METRIC_UUID = "select name, transaction_timestamp as timestamp, type, transaction_level as level, transaction_value as value, transaction_code as code from transactions where metric_uuid = :metric_uuid";

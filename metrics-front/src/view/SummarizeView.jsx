@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import TimelineChart from '../components/Chart/TimelineChart.jsx';
-import { Table, Form, Container, Button, Row, Col } from 'react-bootstrap';
+import { Form, Container, Button, Row, Col } from 'react-bootstrap';
 import InformationTable from '../components/Table/InformationTable.jsx';
 
 const SummarizeView = () => {
