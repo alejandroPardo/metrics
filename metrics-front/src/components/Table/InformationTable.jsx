@@ -21,11 +21,14 @@ const InformationTable = (props) => {
 
   const rowEvents = {
     onClick: (e, row, rowIndex) => {
-      if(props.events) {
+      if(props.events) {        
         fetch(`${url}${row.metricUuid}`)
           .then(response => response.json())
-          .then(data => setModalContent(data.data));
-        setShow(true);
+          .then(data => {
+            let contents = data.data;
+            setModalContent(contents);
+            setShow(true);
+          });
       }
     }
   };

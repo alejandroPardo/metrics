@@ -14,6 +14,7 @@ import lombok.Data;
 public class TransactionDetails {
 	private String name;
 	private LocalDateTime timestamp;
+	private Long duration;
 	private LogType type;
 	private String value;
 	

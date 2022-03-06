@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
-const Chart = (props) => {
+const StackChart = (props) => {
   const [series, setSeries] = useState([]);
 
   const [categories, setCategories] = useState([]);
@@ -55,4 +55,4 @@ const Chart = (props) => {
   );
 }
 
-export default Chart;
+export default StackChart;

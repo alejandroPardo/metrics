@@ -2,10 +2,15 @@ package dev.alejandropardo.metrics.model.service;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoField;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -39,19 +44,13 @@ public class MetricsServiceImpl implements MetricsService {
 	}
 
 	NamedParameterJdbcTemplate template;
-
-	private final String transactionsSQL = "select transaction_uuid, metric_uuid, name, transaction_timestamp, type, transaction_level, transaction_value, transaction_code from transactions where transaction_timestamp >= (now() - interval '1 :timeline') order by transaction_timestamp desc;";
-	
-
-	private final String transactionsJoin = " inner join transactions on transactions.metric_uuid = metrics.metric_uuid ";
-	private final String failuresWhere = "  transaction_code >= 400 ";
 	
 	@Override
 	public ResponseObject findForChart(TimelineValues timeline, boolean isFailure) {
 		Instant startTime = Instant.now();
 		List<Map<String, Object>> rows = null;
 		if(isFailure) {
-			rows = template.queryForList(getSeriesSqlQuery(timeline, Queries.SUMMARIZE_CHART_BY_TIMELINE).replace(":joins", transactionsJoin).replace(":where", " where " + failuresWhere), new MapSqlParameterSource());
+			rows = template.queryForList(getSeriesSqlQuery(timeline, Queries.WITH_FAILURES_TIMELINE + Queries.SUMMARIZE_CHART_BY_TIMELINE), new MapSqlParameterSource());
 		} else {
 			rows = template.queryForList(getSeriesSqlQuery(timeline, Queries.SUMMARIZE_CHART_BY_TIMELINE).replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
 		}
@@ -70,9 +69,9 @@ public class MetricsServiceImpl implements MetricsService {
 
 		List<Map<String, Object>> rows = null;
 		if(isFailure) {
-			rows = template.queryForList(Queries.SUMMARIZED_METRICS_BY_TIMELINE.replace(":timeline", timeline.name()).replace(":joins", transactionsJoin).replace(":where", " and " + failuresWhere), new MapSqlParameterSource());
+			rows = template.queryForList((Queries.WITH_FAILURES_OPERATIONS + Queries.SUMMARIZED_METRICS_BY_TIMELINE).replace(":timeline", timeline.name()), new MapSqlParameterSource());
 		} else {
-			rows = template.queryForList(Queries.SUMMARIZED_METRICS_BY_TIMELINE.replace(":timeline", timeline.name()).replace(":joins", "").replace(":where", ""), new MapSqlParameterSource());
+			rows = template.queryForList((Queries.WITH_OPERATIONS + Queries.SUMMARIZED_METRICS_BY_TIMELINE).replace(":timeline", timeline.name()), new MapSqlParameterSource());
 		}
 		
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, rows.size());
@@ -120,7 +119,7 @@ public class MetricsServiceImpl implements MetricsService {
 	public ResponseObject findTransactionsList(TimelineValues timeline) {
 		Instant startTime = Instant.now();
 
-		var rows = template.query(transactionsSQL.replace(":timeline", timeline.name()), new MapSqlParameterSource(), new ResultSetExtractor<List<Transaction>>(){
+		var rows = template.query(Queries.TRANSACTION_METRICS_BY_TIMELINE.replace(":timeline", timeline.name()), new MapSqlParameterSource(), new ResultSetExtractor<List<Transaction>>(){
 		    @Override
 		    public List<Transaction> extractData(ResultSet rs) throws SQLException,DataAccessException {
 		    	List<Transaction> results = new ArrayList<>();
@@ -164,7 +163,6 @@ public class MetricsServiceImpl implements MetricsService {
 		        	String level = rs.getString("level");
 		        	String transactionValue = rs.getString("value");
 		        	String code = rs.getString("code");
-		        	
 		        	String value = transactionValue;
 		        	
 		        	if(level == null && transactionValue == null) {
@@ -173,12 +171,28 @@ public class MetricsServiceImpl implements MetricsService {
 		        		value = level + " " + transactionValue;
 		        	}
 		        	
-		        	TransactionDetails transaction = new TransactionDetails(rs.getString("name"), rs.getTimestamp("timestamp").toLocalDateTime(), LogType.valueOf(rs.getString("type")), value);
+		        	TransactionDetails transaction = new TransactionDetails(rs.getString("name"), rs.getTimestamp("timestamp").toLocalDateTime(), 0L, LogType.valueOf(rs.getString("type")), value);
 		        	results.add(transaction);
+		        }
+		        var iter = results.listIterator();
+		        while(iter.hasNext()){
+		        	if (iter.hasPrevious()) {
+		            	var prev = iter.previous();
+		            	iter.next();
+		            	var next = iter.next();
+		            	prev.setDuration(Duration.between(prev.getTimestamp(), next.getTimestamp()).toMillis());
+		            } else {
+		            	iter.next();
+		            }
 		        }
 		        return results;
 		    }
 		}));
+		Long finalTime = metric.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli() + metric.getDuration();
+		TransactionDetails detail = metric.getTransactions().get(metric.getTransactions().size()-1);
+		Long lastTransactionTime = detail.getTimestamp().toInstant(ZoneOffset.UTC).toEpochMilli();
+		detail.setDuration(finalTime - lastTransactionTime);
+		
 		Instant startTime = Instant.now();
 		Metadata metadata = new Metadata("self", "1.0", startTime.toString(), Instant.now().toString(), null, 0);
 		return new ResponseObject(metric, metadata);

@@ -15,7 +15,7 @@ function App() {
       <div>
         <Navbar bg="dark" variant="dark">
           <Container>
-            <Navbar.Brand href="#home">
+            <Navbar.Brand href="/">
               <img
                 alt=""
                 src="/logo.svg"
@@ -32,7 +32,7 @@ function App() {
             </Nav>
             <Navbar.Collapse className="justify-content-end">
               <Navbar.Text>
-                Created By: <a target="_blank" rel="noreferrer" href="https://alejandropardo.dev">Alejandro Pardo</a> 
+                By: <a target="_blank" rel="noreferrer" href="https://alejandropardo.dev">Alejandro Pardo</a> 
               </Navbar.Text>
             </Navbar.Collapse>
           </Container>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactApexChart from 'react-apexcharts';
 
-const Chart = (props) => {
+const TimelineChart = (props) => {
   const [series, setSeries] = useState([]);
 
   const options = {
@@ -69,4 +69,4 @@ const Chart = (props) => {
   );
 }
 
-export default Chart;
+export default TimelineChart;

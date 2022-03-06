@@ -26,10 +26,6 @@ const SummarizeView = () => {
           setCounts([{"name":"Count","data":countsData}]);
         });
 
-      fetch(`${url}&_transaction=FAILURE_OPERATIONS`)
-        .then(response => response.json())
-        .then(data => setTableData(data.data));
-
         fetch(`${url}&_transaction=FAILURE_OPERATIONS`)
         .then(response => response.json())
         .then(data => {
@@ -74,7 +70,7 @@ const SummarizeView = () => {
           </Row>
         </Container>
           
-        <TimelineChart title={"Summarized Metrics"} data={series} height={350} yTitle={"Average Time"} unit={"ms."}/>
+        <TimelineChart title={"Summarized Failures"} data={series} height={350} yTitle={"Average Time"} unit={"ms."}/>
         <TimelineChart title={""} data={counts} height={150} yTitle={"Calls"} unit={' '}/>
         <InformationTable data={tableData} columns={tableHeaders} rows={10}/>
       </Container>

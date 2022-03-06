@@ -13,3 +13,15 @@ td {
 table {
   font-size: 10px;
 }
+
+.modalContent {
+  font-size: 12px;
+}
+
+.react-bootstrap-table-pagination-total {
+  font-size: 10px;
+}
+
+.react-bootstrap-table-pagination-total {
+  text-align: right;
+}
