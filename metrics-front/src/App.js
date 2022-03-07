@@ -1,13 +1,9 @@
-import './App.css';
-import SummarizeView from './view/SummarizeView.jsx';
-import FailureView from './view/FailureView.jsx';
-import TransactionsView from './view/TransactionsView.jsx';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route
-} from "react-router-dom";
-import { Navbar, Container, Nav } from 'react-bootstrap';
+import "./App.css";
+import SummarizeView from "./view/SummarizeView.jsx";
+import FailureView from "./view/FailureView.jsx";
+import TransactionsView from "./view/TransactionsView.jsx";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Navbar, Container, Nav } from "react-bootstrap";
 
 function App() {
   return (
@@ -22,8 +18,8 @@ function App() {
                 width="30"
                 height="30"
                 className="d-inline-block align-top"
-              />{' '}
-            Metrics App
+              />{" "}
+              Metrics App
             </Navbar.Brand>
             <Nav className="me-auto">
               <Nav.Link href="/">Summarized Metrics</Nav.Link>
@@ -32,7 +28,14 @@ function App() {
             </Nav>
             <Navbar.Collapse className="justify-content-end">
               <Navbar.Text>
-                By: <a target="_blank" rel="noreferrer" href="https://alejandropardo.dev">Alejandro Pardo</a> 
+                By:{" "}
+                <a
+                  target="_blank"
+                  rel="noreferrer"
+                  href="https://alejandropardo.dev"
+                >
+                  Alejandro Pardo
+                </a>
               </Navbar.Text>
             </Navbar.Collapse>
           </Container>

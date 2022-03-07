@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import ReactApexChart from 'react-apexcharts';
+import React, { useState, useEffect } from "react";
+import ReactApexChart from "react-apexcharts";
 
 const StackChart = (props) => {
   const [series, setSeries] = useState([]);
@@ -9,22 +9,22 @@ const StackChart = (props) => {
   useEffect(() => {
     setSeries(props.data);
     setCategories(props.categories);
-  },[props]);
+  }, [props]);
 
   const options = {
     chart: {
-      type: 'bar',
+      type: "bar",
       height: 350,
       stacked: true,
       toolbar: {
-        show: true
+        show: true,
       },
       zoom: {
-        enabled: false
-      }
+        enabled: false,
+      },
     },
     dataLabels: {
-      enabled: false
+      enabled: false,
     },
     markers: {
       size: 0,
@@ -32,27 +32,32 @@ const StackChart = (props) => {
     plotOptions: {
       bar: {
         horizontal: false,
-        borderRadius: 10
+        borderRadius: 10,
       },
     },
     xaxis: {
-      type: 'datetime',
+      type: "datetime",
       categories: categories,
     },
     legend: {
-      position: 'bottom',
-      offsetY: 10
+      position: "bottom",
+      offsetY: 10,
     },
     fill: {
-      opacity: 1
-    }
+      opacity: 1,
+    },
   };
 
   return (
     <div>
-      <ReactApexChart options={options} series={series} type="bar" height={350} />
+      <ReactApexChart
+        options={options}
+        series={series}
+        type="bar"
+        height={350}
+      />
     </div>
   );
-}
+};
 
 export default StackChart;
