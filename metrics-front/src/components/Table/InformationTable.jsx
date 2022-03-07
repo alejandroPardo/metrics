@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import BootstrapTable from "react-bootstrap-table-next";
-import filterFactory, { textFilter } from "react-bootstrap-table2-filter";
+import filterFactory from "react-bootstrap-table2-filter";
 import InformationModal from "../Modal/InformationModal.jsx";
 import paginationFactory from "react-bootstrap-table2-paginator";
 

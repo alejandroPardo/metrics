@@ -34,6 +34,8 @@ const TransactionsView = () => {
         });
         setSeries(seriesData);
         setCategories(categoriesData);
+        console.log(seriesData);
+        console.log(categoriesData);
       });
 
     fetch(`${url}&_transaction=TRANSACTIONS`)

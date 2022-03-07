@@ -14,8 +14,6 @@ const SelectRow = (props) => {
       auxContent.description = props.content.description;
       auxContent.duration = `${props.content.duration} ms.`;
     } else {
-      console.log(auxSelected - 1);
-      console.log(props.content.transactions[auxSelected - 1]);
       auxContent.name = props.content.transactions[auxSelected - 1].name;
       auxContent.timestamp =
         props.content.transactions[auxSelected - 1].timestamp;

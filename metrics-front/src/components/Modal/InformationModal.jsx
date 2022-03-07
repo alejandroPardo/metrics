@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Modal, Button, Col, Row, Container } from "react-bootstrap";
+import { Modal, Button } from "react-bootstrap";
 import DistributedTimelineChart from "../Chart/DistributedTimelineChart.jsx";
 
 const InformationModal = (props) => {

@@ -9,7 +9,6 @@ const DistributedTimelineChart = (props) => {
 
   useEffect(() => {
     const content = props.content;
-    console.log(props);
     let data = [];
     let array = [];
     data.push({
@@ -29,7 +28,6 @@ const DistributedTimelineChart = (props) => {
       });
     });
     array.push({ data: data });
-    console.log(array);
     setSeries(array);
     setTableData(content);
   }, [props.content]);
