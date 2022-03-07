@@ -1,39 +1,40 @@
 # Docker Compose file Reference (https://docs.docker.com/compose/compose-file/)
 
-version: '3.7'
+version: "3.7"
 
 # Define services
-services: 
-#  app-server: 
-#    build: 
-#      context: metrics-back
-#      dockerfile: Dockerfile
-#    ports:
-#      - "8080:8080"
-#    depends_on: 
-#      - db
-#    environment: 
-#      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/metrics
-#      SPRING_DATASOURCE_USERNAME: metrics
-#      SPRING_DATASOURCE_PASSWORD: metrics
-#    networks: 
-#      - backend
-#      - frontend
+services:
+  app-server:
+    build:
+      context: metrics-back
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/metrics
+      SPRING_DATASOURCE_USERNAME: metrics
+      SPRING_DATASOURCE_PASSWORD: metrics
+      GENERATE_METRICS: "false"
+    networks:
+      - backend
+      - frontend
 
-  # Frontend Service 
-#  app-client:
-#    build:
-#      context: polling-app-client # Use an image built from the specified dockerfile in the #`polling-app-client` directory.
-#      dockerfile: Dockerfile
-#      args:
-#        REACT_APP_API_BASE_URL: http://127.0.0.1:8080/api
-#    ports:
-#      - "9090:80" # Forward the exposed port 80 on the container to port 80 on the host machine
-#    restart: always
-#    depends_on:
-#      - app-server
-#    networks:
-#      - frontend  
+  # Frontend Service
+  app-client:
+    build:
+      context: metrics-front
+      dockerfile: Dockerfile
+      args:
+        REACT_APP_API_BASE_URL: http://127.0.0.1:8080
+    ports:
+      - "80:80" # Forward the exposed port 80 on the container to port 80 on the host machine
+    restart: always
+    depends_on:
+      - app-server
+    networks:
+      - frontend
 
   # Database Service (Mysql)
   db:
@@ -48,7 +49,7 @@ services:
       - ./sql/db-data:/var/lib/postgresql/data
       - ./sql/schema.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
-      - backend  
+      - backend
 
 #Backup
 #docker exec -t your-db-container  pg_dumpall -c -U postgres | gzip > ./tmp/dump_$(date +"%Y-%m-#%d_%H_%M_%S").gz
@@ -59,4 +60,4 @@ services:
 # Networks to be created to facilitate communication between containers
 networks:
   backend:
-  frontend:    
+  frontend:
